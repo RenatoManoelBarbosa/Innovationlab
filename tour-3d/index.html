@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sala de Inovação 3D</title>
+  <style>
+    :root {
+      --pmmg-azul: #002F6C;
+      --pmmg-dourado: #D6A329;
+      --pmmg-branco: #FFFFFF;
+      --painel: rgba(6, 17, 34, 0.72);
+      --linha: rgba(255, 255, 255, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 18%, rgba(214, 163, 41, 0.2), transparent 32%),
+        linear-gradient(145deg, #04101f, #071a33 48%, #020812);
+      color: var(--pmmg-branco);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .app {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      place-items: center;
+      position: relative;
+      perspective: 1200px;
+      user-select: none;
+    }
+
+    .scene {
+      width: min(92vw, 1480px);
+      height: min(72vh, 850px);
+      border: 1px solid var(--linha);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      box-shadow: 0 34px 90px rgba(0, 0, 0, 0.48);
+      overflow: hidden;
+      position: relative;
+      cursor: grab;
+      transform-style: preserve-3d;
+    }
+
+    .scene:active {
+      cursor: grabbing;
+    }
+
+    .image-plane {
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: filter 160ms ease;
+      will-change: transform;
+    }
+
+    .image-plane img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      pointer-events: none;
+      transform: translateZ(0);
+    }
+
+    .scene::before,
+    .scene::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .scene::before {
+      background:
+        linear-gradient(90deg, rgba(2, 8, 18, 0.44), transparent 18%, transparent 82%, rgba(2, 8, 18, 0.44)),
+        linear-gradient(180deg, rgba(2, 8, 18, 0.36), transparent 22%, transparent 80%, rgba(2, 8, 18, 0.44));
+    }
+
+    .scene::after {
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      box-shadow: inset 0 0 70px rgba(0, 0, 0, 0.32);
+    }
+
+    .hotspot {
+      position: absolute;
+      z-index: 4;
+      min-width: 118px;
+      padding: 8px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      border-left: 4px solid var(--pmmg-dourado);
+      border-radius: 8px;
+      background: rgba(0, 47, 108, 0.72);
+      backdrop-filter: blur(10px);
+      color: var(--pmmg-branco);
+      font-size: 12px;
+      font-weight: 800;
+      pointer-events: none;
+      text-shadow: 0 1px 8px rgba(0, 0, 0, 0.36);
+    }
+
+    .h-ideias { left: 43%; top: 48%; }
+    .h-foco { left: 49%; top: 25%; }
+    .h-relax { left: 9%; top: 56%; }
+    .h-dados { right: 14%; top: 31%; }
+    .h-painel { right: 3%; top: 20%; }
+
+    .topbar,
+    .controls {
+      position: fixed;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px;
+      border: 1px solid var(--linha);
+      border-radius: 999px;
+      background: var(--painel);
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.34);
+      backdrop-filter: blur(18px);
+    }
+
+    .topbar {
+      left: 22px;
+      top: 18px;
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+
+    .topbar strong {
+      display: block;
+      line-height: 1.05;
+    }
+
+    .topbar span {
+      display: block;
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 12px;
+    }
+
+    .badge {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(214, 163, 41, 0.75);
+      border-radius: 50%;
+      color: #04101f;
+      background: var(--pmmg-dourado);
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    .controls {
+      right: 20px;
+      bottom: 20px;
+    }
+
+    button,
+    .back-link {
+      min-width: 42px;
+      height: 42px;
+      display: inline-grid;
+      place-items: center;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 999px;
+      color: var(--pmmg-branco);
+      background: rgba(255, 255, 255, 0.08);
+      cursor: pointer;
+      text-decoration: none;
+      font: 800 14px Arial, Helvetica, sans-serif;
+      transition: transform 160ms ease, background 160ms ease;
+    }
+
+    button:hover,
+    .back-link:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .back-link {
+      padding: 0 14px;
+    }
+
+    .zoom {
+      width: min(180px, 28vw);
+      height: 42px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 12px;
+      color: rgba(255, 255, 255, 0.78);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--pmmg-dourado);
+    }
+
+    .hint {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      z-index: 9;
+      transform: translateX(-50%);
+      color: rgba(255, 255, 255, 0.74);
+      font-size: 13px;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    @media (max-width: 760px) {
+      .scene {
+        width: 94vw;
+        height: 64vh;
+      }
+
+      .topbar {
+        right: 12px;
+        left: 12px;
+        top: 12px;
+      }
+
+      .controls {
+        right: 12px;
+        bottom: 12px;
+        left: 12px;
+        justify-content: center;
+      }
+
+      .back-link {
+        display: none;
+      }
+
+      .hotspot {
+        display: none;
+      }
+
+      .hint {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="topbar">
+      <div class="badge">3D</div>
+      <div>
+        <strong>Sala de Inovação e Inteligência Organizacional</strong>
+        <span>arraste para mover, use a roda do mouse para aproximar</span>
+      </div>
+    </div>
+
+    <section class="scene" id="scene" aria-label="Tour 3D da sala de inovação">
+      <div class="image-plane" id="plane">
+        <img src="sala-inovacao-com-quadro-colaboradores.png" alt="Renderização da Sala de Inovação e Inteligência Organizacional">
+      </div>
+      <div class="hotspot h-ideias">Arena de Ideias</div>
+      <div class="hotspot h-foco">Foco profundo</div>
+      <div class="hotspot h-relax">Potencialidade criativa</div>
+      <div class="hotspot h-dados">Tecnologia e dados</div>
+      <div class="hotspot h-painel">Painel de desafios</div>
+    </section>
+
+    <div class="controls">
+      <button id="play" type="button" title="Pausar panorama" aria-label="Pausar panorama">Ⅱ</button>
+      <button id="reset" type="button" title="Reiniciar vista" aria-label="Reiniciar vista">↺</button>
+      <button id="full" type="button" title="Tela cheia" aria-label="Tela cheia">⛶</button>
+      <div class="zoom">
+        <span>Zoom</span>
+        <input id="zoom" type="range" min="1" max="2.35" step="0.01" value="1" aria-label="Zoom">
+      </div>
+      <a class="back-link" href="../index.html">Voltar</a>
+    </div>
+
+    <p class="hint">Panorama automático ativado. Interaja para pausar e explorar detalhes.</p>
+  </main>
+
+  <script>
+    const scene = document.getElementById("scene");
+    const plane = document.getElementById("plane");
+    const zoomInput = document.getElementById("zoom");
+    const playButton = document.getElementById("play");
+    const resetButton = document.getElementById("reset");
+    const fullButton = document.getElementById("full");
+
+    const state = {
+      playing: true,
+      dragging: false,
+      x: 0,
+      y: 0,
+      targetX: 0,
+      targetY: 0,
+      startX: 0,
+      startY: 0,
+      baseX: 0,
+      baseY: 0,
+      zoom: 1
+    };
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function setPlaying(value) {
+      state.playing = value;
+      playButton.textContent = value ? "Ⅱ" : "▶";
+      playButton.title = value ? "Pausar panorama" : "Reproduzir panorama";
+      playButton.setAttribute("aria-label", playButton.title);
+    }
+
+    function applyTransform() {
+      const maxX = 16 * state.zoom;
+      const maxY = 9 * state.zoom;
+      state.x += (state.targetX - state.x) * 0.08;
+      state.y += (state.targetY - state.y) * 0.08;
+
+      const moveX = clamp(state.x, -maxX, maxX);
+      const moveY = clamp(state.y, -maxY, maxY);
+      const rotateY = moveX * -0.42;
+      const rotateX = moveY * 0.34;
+
+      plane.style.transform =
+        `translate3d(${moveX}px, ${moveY}px, 80px) ` +
+        `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(${state.zoom})`;
+    }
+
+    function animate(time) {
+      if (state.playing && !state.dragging) {
+        state.targetX = Math.sin(time * 0.00034) * 18;
+        state.targetY = Math.sin(time * 0.00023) * 7;
+      }
+      applyTransform();
+      requestAnimationFrame(animate);
+    }
+
+    scene.addEventListener("pointerdown", (event) => {
+      state.dragging = true;
+      state.startX = event.clientX;
+      state.startY = event.clientY;
+      state.baseX = state.targetX;
+      state.baseY = state.targetY;
+      setPlaying(false);
+      scene.setPointerCapture(event.pointerId);
+    });
+
+    scene.addEventListener("pointermove", (event) => {
+      if (!state.dragging) return;
+      state.targetX = state.baseX + (event.clientX - state.startX) * 0.24;
+      state.targetY = state.baseY + (event.clientY - state.startY) * 0.18;
+    });
+
+    scene.addEventListener("pointerup", (event) => {
+      state.dragging = false;
+      try {
+        scene.releasePointerCapture(event.pointerId);
+      } catch (error) {
+        /* nada a fazer */
+      }
+    });
+
+    scene.addEventListener("pointercancel", () => {
+      state.dragging = false;
+    });
+
+    scene.addEventListener("wheel", (event) => {
+      event.preventDefault();
+      state.zoom = clamp(state.zoom - event.deltaY * 0.0012, 1, 2.35);
+      zoomInput.value = state.zoom.toFixed(2);
+      setPlaying(false);
+    }, { passive: false });
+
+    zoomInput.addEventListener("input", () => {
+      state.zoom = Number(zoomInput.value);
+      setPlaying(false);
+    });
+
+    playButton.addEventListener("click", () => {
+      setPlaying(!state.playing);
+    });
+
+    resetButton.addEventListener("click", () => {
+      state.targetX = 0;
+      state.targetY = 0;
+      state.zoom = 1;
+      zoomInput.value = "1";
+      setPlaying(true);
+    });
+
+    fullButton.addEventListener("click", () => {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else {
+        document.documentElement.requestFullscreen();
+      }
+    });
+
+    scene.addEventListener("dblclick", () => {
+      state.zoom = state.zoom > 1.35 ? 1 : 1.85;
+      zoomInput.value = state.zoom.toFixed(2);
+      setPlaying(false);
+    });
+
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
